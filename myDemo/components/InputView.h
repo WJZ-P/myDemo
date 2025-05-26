@@ -9,6 +9,11 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@protocol InputViewDelegate <NSObject>
+
+
+@end
+
 @interface InputView :UIView
 //
 - (instancetype)initWithTitle:(NSString *)title placeholder:(NSString *)placeholder;

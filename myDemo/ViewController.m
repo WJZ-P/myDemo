@@ -50,10 +50,7 @@
     ];
     
     
-    //inputView里面定义了一个block，也就是回调函数，在这里controller里面去具体实现。
-    inputView.textChange=^(NSString * text){
-        NSLog(@"用户输入了：%@",text);
-    };
+    
     
     //要设置一个键盘监听
     [self setupKeyboardObservers];

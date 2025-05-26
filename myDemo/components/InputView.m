@@ -36,6 +36,12 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
         
         [self setupConstraints];
         [self setupObservers];
+        
+        //实现一些事先定义好的接口
+        //inputView里面定义了一个block，也就是回调函数，在这里controller里面去具体实现。
+        self.textChange=^(NSString * text){
+            NSLog(@"用户输入了：%@",text);
+        };
     }
     
     return self;
@@ -137,8 +143,7 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
 // 创建单个按钮
 - (UIButton *)createToolButtonWithType:(InputViewButtonType)type {
     UIButton *button=[UIButton buttonWithType:UIButtonTypeCustom];
-    button.backgroundColor=[UIColor systemGray6Color];//先写死这个颜色
-    button.layer.cornerRadius=15;
+    
     //设置按钮的图标
     NSString *imageName;
     
@@ -155,6 +160,13 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     }
     [button setImage:[UIImage systemImageNamed:imageName] forState:UIControlStateNormal];//设置在普通状态下的样式
     button.tintColor=[UIColor darkGrayColor];//这个是设置SF这样模版图标的样式，这里设置成深灰色
+    
+    //下面设置一下boder的样式
+    button.layer.borderColor=[UIColor lightGrayColor].CGColor;
+    button.layer.borderWidth=1.0f;
+    button.backgroundColor=[UIColor systemGray6Color];//先写死这个颜色
+    button.layer.cornerRadius=15;
+    
     
     [button addTarget:self action:@selector(toolButtonTapped:) forControlEvents:UIControlEventTouchUpInside];   //设置按钮的点击事件
     
