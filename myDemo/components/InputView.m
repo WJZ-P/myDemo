@@ -21,10 +21,16 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
 @property (nonatomic, strong) UIStackView *buttonStack;//按钮的容器
 @property (nonatomic, strong) NSArray<UIButton *>*actionButtons;//存放按钮的数组
 
+@property (nonatomic, strong) NSLayoutConstraint *bottomConstraint;//新增一个底部约束的饮用
+@property (nonatomic, weak) UIView *containerView;//存储父视图的引用，必须weak防止循环引用。
+
 @end
 
 @implementation InputView
-// 这个就相当于初始化方法
+
+#pragma mark - UI初始化
+
+// 初始化方法
 - (instancetype)initWithTitle:(NSString *)title
                   placeholder:(NSString *)placeholder {
     self = [super initWithFrame:CGRectZero];
@@ -45,6 +51,16 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     }
     
     return self;
+}
+
+// 被添加到父视图时自动执行
+-(void)didMoveToSuperview{
+    [super didMoveToSuperview];
+    if (self.superview) {
+        self.containerView = self.superview;
+        [self setupPositionConstraints];
+        [self setupKeyboardObservers];
+    }
 }
 
 #pragma mark - 私有方法
@@ -69,6 +85,9 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     
 }
 
+#pragma mark - 设置Constraints
+
+// 设置的是该视图内部布局
 - (void)setupConstraints{
     // 使用VFL布局，VFL就是visual format language，也就是可视化格式语言。
     
@@ -102,6 +121,23 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     
 }
 
+// 设置输入视图定位约束，也就是元素本身相对于父视图的位置约束
+- (void)setupPositionConstraints {
+    self.translatesAutoresizingMaskIntoConstraints = NO;
+    
+    // 水平居中与宽度约束
+    [NSLayoutConstraint activateConstraints:@[
+        [self.centerXAnchor constraintEqualToAnchor:self.containerView.centerXAnchor],
+        [self.widthAnchor constraintEqualToAnchor:self.containerView.widthAnchor multiplier:0.9]
+    ]];
+    
+    // 创建并存储底部约束
+    self.bottomConstraint = [self.bottomAnchor constraintEqualToAnchor:self.containerView.safeAreaLayoutGuide.bottomAnchor constant:-20];
+    self.bottomConstraint.active = YES;
+}
+
+#pragma mark - 设置监听器
+
 -(void)setupObservers{
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(handleTextChange:)
@@ -114,6 +150,42 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
         self.textChange(_textField.text);
     }
 }
+
+// 键盘处理（移至InputView内部）
+- (void)setupKeyboardObservers {
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(keyboardWillChange:)
+                                                 name:UIKeyboardWillShowNotification
+                                               object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(keyboardWillChange:)
+                                                 name:UIKeyboardWillHideNotification
+                                               object:nil];
+}
+
+- (void)keyboardWillChange:(NSNotification *)notification {
+    NSDictionary *userInfo = notification.userInfo;
+    CGRect keyboardFrame = [userInfo[UIKeyboardFrameEndUserInfoKey] CGRectValue];
+    NSTimeInterval duration = [userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue];
+    UIViewAnimationOptions curve = [userInfo[UIKeyboardAnimationCurveUserInfoKey] integerValue] << 16;
+    
+    // 计算约束值
+    CGFloat newConstant = notification.name == UIKeyboardWillShowNotification ?
+    -keyboardFrame.size.height :
+    -20;
+    
+    self.bottomConstraint.constant = newConstant;
+    
+    [UIView animateWithDuration:duration
+                          delay:0
+                        options:curve
+                     animations:^{
+        [self.containerView layoutIfNeeded];
+    } completion:nil];
+}
+
+# pragma mark - 处理按钮相关
 
 -(void)setupToolbarButtons{
     _buttonStack=[[UIStackView alloc]init];//分配空间
@@ -187,6 +259,8 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     }
 }
 
+
+#pragma mark - 视图释放时
 
 -(void)dealloc{
     // 释放的时候要移除观察者
