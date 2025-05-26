@@ -6,6 +6,7 @@
 //
 
 #import "InputView.h"
+#import "../utils/ColorUtil.h"
 
 typedef NS_ENUM(NSUInteger,InputViewButtonType){
     InputViewButtonSend,
@@ -18,7 +19,7 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
 @property (nonatomic, strong) UILabel *titleLabel;//input上面的文字
 @property (nonatomic, strong) UITextField *textField;//输入框
 @property (nonatomic, strong) UIStackView *buttonStack;//按钮的容器
-@property (nonatomic, strong) NSArray<UIButton *>actionButtons;//存放按钮的数组
+@property (nonatomic, strong) NSArray<UIButton *>*actionButtons;//存放按钮的数组
 
 @end
 
@@ -99,9 +100,42 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     _buttonStack=[[UIStackView alloc]init];//分配空间
     _buttonStack.axis=UILayoutConstraintAxisHorizontal;//横向排列
     _buttonStack.distribution=UIStackViewDistributionFillEqually;
+    _buttonStack.spacing=8;
+    
+    NSArray *buttonTypes =@[
+        @(InputViewButtonSend),@(InputViewButtonThink),@(InputViewButtonOnline)
+    ];
+    
+    NSMutableArray *buttons=[NSMutableArray new];//存放按钮
+    for(NSNumber *typeNum in buttonTypes){//初始化按钮
+        UIButton *btn=[self createToolButtonWithType:typeNum.integerValue];
+        [buttons addObject:btn];
+    }
+    
+    _actionButtons=[buttons copy];
+    for(UIButton *btn in _actionButtons)[_buttonStack addArrangedSubview:btn];
+    
+    _buttonStack.translatesAutoresizingMaskIntoConstraints=NO;
+    //添加进视图里
+    [self addSubview:_buttonStack];
+    
 }
 
-//还有的暂时先不写，看看效果
+// 创建单个按钮
+- (UIButton *)createToolButtonWithType:(InputViewButtonType)type {
+    UIButton *button=[UIButton buttonWithType:UIButtonTypeCustom];
+    button.backgroundColor=[UIColor systemGray6Color];//先写死这个颜色
+    button.layer.cornerRadius=15;
+    //设置按钮的图标
+    NSString *imageName;
+    
+    switch (type){
+        case InputViewButtonSend:
+            imageName=@"face.smiling";
+        
+    }
+    
+}
 
 -(void)dealloc{
     // 释放的时候要移除观察者
