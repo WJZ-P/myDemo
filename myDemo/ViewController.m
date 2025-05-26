@@ -25,9 +25,9 @@
     
     //自己的inputView
     
-    InputView *inputView=[[InputView alloc] initWithTitle:@"快乐的腾讯元宝" placeholder:@"快点输入文字！🐧"];
+    InputView *inputView=[[InputView alloc] initWithTitle:@"我是一个快乐的元宝🎉" placeholder:@"快点输入文字！🐧"];
     
-    inputView.translatesAutoresizingMaskIntoConstraints=NO;
+    inputView.translatesAutoresizingMaskIntoConstraints=NO;//选择自己手动布局
     
     //下面插入自己的组件
     [self.view addSubview:inputView];
@@ -41,9 +41,10 @@
         //让inputView的水平中心对齐父视图的水平中心
         [inputView.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
         //给inputView一个宽度
-        [inputView.widthAnchor constraintEqualToConstant:300],
-        //再给一个高度
-        [inputView.heightAnchor constraintEqualToConstant:100],
+        //[inputView.widthAnchor constraintEqualToConstant:300],
+        [inputView.widthAnchor constraintEqualToAnchor:self.view.widthAnchor multiplier:0.9],//主视图宽度的90%
+        //再给一个高度(这里先不要写死元素高度)
+        // [inputView.heightAnchor constraintEqualToConstant:100],
         self.inputViewBottomConstraint//我们存好的约束
         ]
     ];

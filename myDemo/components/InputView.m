@@ -12,7 +12,7 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     InputViewButtonSend,
     InputViewButtonThink,
     InputViewButtonOnline
-} <#new#>;
+};
 
 @interface InputView()
 
@@ -32,9 +32,10 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     if(self){
         //调用下面的方法
         [self setupUIWithTitle:title placeholder:placeholder];
+        [self setupToolbarButtons];//初始化input下方的工具栏
+        
         [self setupConstraints];
         [self setupObservers];
-        [self setupToolbarButtons];//初始化input下方的工具栏
     }
     
     return self;
@@ -66,19 +67,31 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     // 使用VFL布局，VFL就是visual format language，也就是可视化格式语言。
     
     //先创建一个视图对象，后面要用。
-    NSDictionary *views=NSDictionaryOfVariableBindings(_titleLabel,_textField);
+    NSDictionary *views=NSDictionaryOfVariableBindings(_titleLabel,_textField,_buttonStack);
+    
+    //这里定义一个别名，用于控制视图的左右边界。
+    NSDictionary *metrics = @{
+        @"topPadding": @8,
+        @"hPadding": @16, //水平padding
+        @"bottomPadding": @8,
+        @"labelFieldSpacing": @8,
+        @"fieldStackSpacing": @16,
+        @"textFieldHeight": @40
+    };
     
     //下面这里，开始创建规则。
     [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|[_titleLabel]|" options:0 metrics:nil views:views]];
     
     [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|[_textField]|" options:0 metrics:nil  views:views]];
     
-    // 这里的VFL中，-8-表示八个单位这么宽，后面textField(40)表示它的高度是40单位。
-    [self addConstraints:
-       [NSLayoutConstraint constraintsWithVisualFormat:@"V:|[_titleLabel]-8-[_textField(40)]|"
-                                               options:0
-                                               metrics:nil
-                                                 views:views]];
+    // 规则3：让 _buttonStack 左右留出我们自定义的 16 点边距
+    [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-hPadding-[_buttonStack]-hPadding-|" options:0 metrics:metrics views:views]];
+    
+    // 规则4：定义从上到下的完整布局链条
+    [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-topPadding-[_titleLabel]-labelFieldSpacing-[_textField(textFieldHeight)]-fieldStackSpacing-[_buttonStack]-bottomPadding-|"
+                                                                 options:0
+                                                                 metrics:metrics
+                                                                   views:views]];
     
     
 }
@@ -99,7 +112,7 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
 -(void)setupToolbarButtons{
     _buttonStack=[[UIStackView alloc]init];//分配空间
     _buttonStack.axis=UILayoutConstraintAxisHorizontal;//横向排列
-    _buttonStack.distribution=UIStackViewDistributionFillEqually;
+    _buttonStack.distribution=UIStackViewDistributionEqualSpacing;//布局调整
     _buttonStack.spacing=8;
     
     NSArray *buttonTypes =@[
@@ -131,11 +144,37 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     
     switch (type){
         case InputViewButtonSend:
-            imageName=@"face.smiling";
-        
+            imageName=@"paperplane";//设置发送按钮的样式,这是一个纸飞机
+            break;
+        case InputViewButtonThink:
+            imageName=@"lightbulb.max";//一个发最大光的灯泡
+            break;
+        case InputViewButtonOnline:
+            imageName=@"globe";//一个地球
+            break;
     }
+    [button setImage:[UIImage systemImageNamed:imageName] forState:UIControlStateNormal];//设置在普通状态下的样式
+    button.tintColor=[UIColor darkGrayColor];//这个是设置SF这样模版图标的样式，这里设置成深灰色
     
+    [button addTarget:self action:@selector(toolButtonTapped:) forControlEvents:UIControlEventTouchUpInside];   //设置按钮的点击事件
+    
+    //约束按钮的尺寸
+    [button.widthAnchor constraintEqualToConstant:30].active = YES;
+    [button.heightAnchor constraintEqualToConstant:30].active = YES;
+    
+    return button;
 }
+
+// 按钮点击处理
+- (void)toolButtonTapped:(UIButton *)sender {
+    NSUInteger index = [self.actionButtons indexOfObject:sender];
+    if (index != NSNotFound) {
+//        if (self.buttonAction) {
+//            self.buttonAction(index); // 通过block回调点击事件
+//        }
+    }
+}
+
 
 -(void)dealloc{
     // 释放的时候要移除观察者
