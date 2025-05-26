@@ -40,7 +40,7 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
         [self setupUIWithTitle:title placeholder:placeholder];
         [self setupToolbarButtons];//初始化input下方的工具栏
         
-        [self setupConstraints];
+        [self setupConstraints];//设置元素内部约束
         [self setupObservers];
         
         //实现一些事先定义好的接口
@@ -132,7 +132,7 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     ]];
     
     // 创建并存储底部约束
-    self.bottomConstraint = [self.bottomAnchor constraintEqualToAnchor:self.containerView.safeAreaLayoutGuide.bottomAnchor constant:-20];
+    self.bottomConstraint = [self.bottomAnchor constraintEqualToAnchor:self.containerView.safeAreaLayoutGuide.bottomAnchor constant:-5];
     self.bottomConstraint.active = YES;
 }
 
@@ -169,11 +169,12 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     CGRect keyboardFrame = [userInfo[UIKeyboardFrameEndUserInfoKey] CGRectValue];
     NSTimeInterval duration = [userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue];
     UIViewAnimationOptions curve = [userInfo[UIKeyboardAnimationCurveUserInfoKey] integerValue] << 16;
+    CGFloat safeAreaBottomHeight = self.containerView.safeAreaInsets.bottom;//安全区底部的高度
     
     // 计算约束值
     CGFloat newConstant = notification.name == UIKeyboardWillShowNotification ?
-    -keyboardFrame.size.height :
-    -20;
+    -keyboardFrame.size.height+safeAreaBottomHeight-5 :-5;
+    //这里控制输入栏往上的时候，要少移动安全区的那一块高度，不然会空出来一块，不好看
     
     self.bottomConstraint.constant = newConstant;
     
@@ -216,22 +217,29 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
 - (UIButton *)createToolButtonWithType:(InputViewButtonType)type {
     UIButton *button=[UIButton buttonWithType:UIButtonTypeCustom];
     
-    //设置按钮的图标
-    NSString *imageName;
+    NSString *imageName;//设置按钮的图标
+    NSString *buttonTitle;//按钮的文字
     
     switch (type){
         case InputViewButtonSend:
             imageName=@"paperplane";//设置发送按钮的样式,这是一个纸飞机
+            buttonTitle=@"发送";
             break;
         case InputViewButtonThink:
             imageName=@"lightbulb.max";//一个发最大光的灯泡
+            buttonTitle=@"深度思考";
             break;
         case InputViewButtonOnline:
             imageName=@"globe";//一个地球
+            buttonTitle=@"联网搜索";
             break;
     }
     [button setImage:[UIImage systemImageNamed:imageName] forState:UIControlStateNormal];//设置在普通状态下的样式
     button.tintColor=[UIColor darkGrayColor];//这个是设置SF这样模版图标的样式，这里设置成深灰色
+    
+    //下面设置按钮标题
+    [button setTitle:buttonTitle forState:UIControlStateNormal];
+    [button setTitleColor:[UIColor darkGrayColor] forState:UIControlStateNormal]; // 设置标题颜色
     
     //下面设置一下boder的样式
     button.layer.borderColor=[UIColor lightGrayColor].CGColor;
@@ -242,9 +250,9 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     
     [button addTarget:self action:@selector(toolButtonTapped:) forControlEvents:UIControlEventTouchUpInside];   //设置按钮的点击事件
     
-    //约束按钮的尺寸
-    [button.widthAnchor constraintEqualToConstant:30].active = YES;
-    [button.heightAnchor constraintEqualToConstant:30].active = YES;
+    //约束按钮的尺寸(注释掉就是自动fit-content)
+//    [button.widthAnchor constraintEqualToConstant:30].active = YES;
+//    [button.heightAnchor constraintEqualToConstant:35].active = YES;
     
     return button;
 }
