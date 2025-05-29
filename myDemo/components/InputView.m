@@ -198,19 +198,36 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
         @(InputViewButtonSend),@(InputViewButtonThink),@(InputViewButtonOnline)
     ];
     
-    NSMutableArray *buttons=[NSMutableArray new];//存放按钮
-    for(NSNumber *typeNum in buttonTypes){//初始化按钮
-        UIButton *btn=[self createToolButtonWithType:typeNum.integerValue];
-        [buttons addObject:btn];
+    NSMutableArray *buttons = [NSMutableArray array];//存放按钮
+    for (NSNumber *type in buttonTypes) {
+        UIButton *button = [self createToolButtonWithType:[type integerValue]];
+        [buttons addObject:button];
+    }
+    _actionButtons = [buttons copy];
+    
+    // 将发送按钮与输入框放在同一行
+    UIButton *sendButton = _actionButtons[0];
+    [self addSubview:sendButton];
+    sendButton.translatesAutoresizingMaskIntoConstraints = NO;
+    [NSLayoutConstraint activateConstraints:@[
+        [sendButton.centerYAnchor constraintEqualToAnchor:_textField.centerYAnchor],
+        [sendButton.leadingAnchor constraintEqualToAnchor:_textField.trailingAnchor constant:8],
+        [sendButton.widthAnchor constraintEqualToConstant:60],
+        [sendButton.heightAnchor constraintEqualToConstant:40]
+    ]];
+    
+    // 其他按钮放在下一行
+    for (NSInteger i = 1; i < _actionButtons.count; i++) {
+        [_buttonStack addArrangedSubview:_actionButtons[i]];
     }
     
-    _actionButtons=[buttons copy];
-    for(UIButton *btn in _actionButtons)[_buttonStack addArrangedSubview:btn];
-    
-    _buttonStack.translatesAutoresizingMaskIntoConstraints=NO;
-    //添加进视图里
+    _buttonStack.translatesAutoresizingMaskIntoConstraints = NO;
     [self addSubview:_buttonStack];
-    
+    [NSLayoutConstraint activateConstraints:@[
+        [_buttonStack.topAnchor constraintEqualToAnchor:_textField.bottomAnchor constant:16],
+        [_buttonStack.leadingAnchor constraintEqualToAnchor:self.leadingAnchor constant:16],
+        [_buttonStack.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-16]
+    ]];
 }
 
 // 创建单个按钮
@@ -247,14 +264,38 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     button.backgroundColor=[UIColor systemGray6Color];//先写死这个颜色
     button.layer.cornerRadius=15;
     
+    // 添加内边距以改善视觉效果
+    button.contentEdgeInsets = UIEdgeInsetsMake(0, 10, 0, 10);
     
     [button addTarget:self action:@selector(toolButtonTapped:) forControlEvents:UIControlEventTouchUpInside];   //设置按钮的点击事件
     
-    //约束按钮的尺寸(注释掉就是自动fit-content)
-//    [button.widthAnchor constraintEqualToConstant:30].active = YES;
-//    [button.heightAnchor constraintEqualToConstant:35].active = YES;
+    // 为深度思考和联网搜索按钮添加点击事件
+    if (type == InputViewButtonThink || type == InputViewButtonOnline) {
+        [button addTarget:self action:@selector(toggleButton:) forControlEvents:UIControlEventTouchUpInside];
+    }
     
     return button;
+}
+
+// 深度思考和联网搜索按钮的点击事件
+- (void)toggleButton:(UIButton *)sender {
+    if ([sender.backgroundColor isEqual:[UIColor systemGray6Color]]) {
+        sender.backgroundColor = [UIColor darkGrayColor];
+        [sender setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+        if (sender == _actionButtons[1]) {//说明点击的是深度思考
+            self.isThinkButtonActive = YES;
+        } else if (sender == _actionButtons[2]) {//说明点击的是联网搜索
+            self.isOnlineButtonActive = YES;
+        }
+    } else {
+        sender.backgroundColor = [UIColor systemGray6Color];
+        [sender setTitleColor:[UIColor darkGrayColor] forState:UIControlStateNormal];
+        if (sender == _actionButtons[1]) {
+            self.isThinkButtonActive = NO;
+        } else if (sender == _actionButtons[2]) {
+            self.isOnlineButtonActive = NO;
+        }
+    }
 }
 
 // 按钮点击处理

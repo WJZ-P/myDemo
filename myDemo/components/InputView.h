@@ -20,6 +20,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 //通过block回调传递内容变化
 @property (nonatomic,strong) void (^textChange)(NSString *text);
+
+@property (nonatomic, assign) BOOL isThinkButtonActive;
+@property (nonatomic, assign) BOOL isOnlineButtonActive;
 @end
 
 NS_ASSUME_NONNULL_END
