@@ -16,13 +16,12 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
 
 @interface InputView()
 
-@property (nonatomic, strong) UILabel *titleLabel;//input上面的文字
-@property (nonatomic, strong) UITextField *textField;//输入框
-@property (nonatomic, strong) UIStackView *buttonStack;//按钮的容器
-@property (nonatomic, strong) NSArray<UIButton *>*actionButtons;//存放按钮的数组
+@property (nonatomic, strong) UITextField *textField;
+@property (nonatomic, strong) UIStackView *buttonStack;
+@property (nonatomic, strong) NSMutableDictionary<NSNumber *, UIButton *> *actionButtons;
 
-@property (nonatomic, strong) NSLayoutConstraint *bottomConstraint;//新增一个底部约束的饮用
-@property (nonatomic, weak) UIView *containerView;//存储父视图的引用，必须weak防止循环引用。
+@property (nonatomic, strong) NSLayoutConstraint *bottomConstraint;
+@property (nonatomic, weak) UIView *containerView;
 
 @end
 
@@ -31,20 +30,15 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
 #pragma mark - UI初始化
 
 // 初始化方法
-- (instancetype)initWithTitle:(NSString *)title
-                  placeholder:(NSString *)placeholder {
+- (instancetype)init {
     self = [super initWithFrame:CGRectZero];
     
     if(self){
-        //调用下面的方法
-        [self setupUIWithTitle:title placeholder:placeholder];
-        [self setupToolbarButtons];//初始化input下方的工具栏
-        
-        [self setupConstraints];//设置元素内部约束
+        [self setupUI];
+        [self setupToolbarButtons];
+        [self setupConstraints];
         [self setupObservers];
         
-        //实现一些事先定义好的接口
-        //inputView里面定义了一个block，也就是回调函数，在这里controller里面去具体实现。
         self.textChange=^(NSString * text){
             NSLog(@"用户输入了：%@",text);
         };
@@ -65,60 +59,50 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
 
 #pragma mark - 私有方法
 
--(void)setupUIWithTitle:(NSString *)title placeholder:(NSString *)placeholder{
-    // 标题标签
-    _titleLabel=[[UILabel alloc] init];
-    _titleLabel.text=title;
-    _titleLabel.font=[UIFont systemFontOfSize:14];
-    
+-(void)setupUI{
     //这里设置输入框的内容
     _textField = [[UITextField alloc] init];
-    _textField.placeholder = placeholder;
-    _textField.borderStyle = UITextBorderStyleRoundedRect;
+    _textField.placeholder = @"和元宝说点什么";
+    _textField.borderStyle = UITextBorderStyleNone;  // 移除边框
     _textField.font = [UIFont systemFontOfSize:16];
     
-    _titleLabel.translatesAutoresizingMaskIntoConstraints=NO;
     _textField.translatesAutoresizingMaskIntoConstraints=NO;
     
-    [self addSubview:_titleLabel];
     [self addSubview:_textField];
     
+    // 添加InputView的边框
+    self.layer.borderColor = [UIColor lightGrayColor].CGColor;
+    self.layer.borderWidth = 0.2f;  //控制整个组件的边框
+    self.layer.cornerRadius = 20.0f;
+    self.backgroundColor = [UIColor colorWithHexString:@"#f8f8f8"];  // 设置一个更浅的灰色背景
 }
 
 #pragma mark - 设置Constraints
 
 // 设置的是该视图内部布局
 - (void)setupConstraints{
-    // 使用VFL布局，VFL就是visual format language，也就是可视化格式语言。
+    NSDictionary *views=NSDictionaryOfVariableBindings(_textField,_buttonStack);
     
-    //先创建一个视图对象，后面要用。
-    NSDictionary *views=NSDictionaryOfVariableBindings(_titleLabel,_textField,_buttonStack);
-    
-    //这里定义一个别名，用于控制视图的左右边界。
     NSDictionary *metrics = @{
         @"topPadding": @8,
-        @"hPadding": @16, //水平padding
-        @"bottomPadding": @8,
-        @"labelFieldSpacing": @8,
-        @"fieldStackSpacing": @16,
-        @"textFieldHeight": @40
+        @"hPadding": @16,
+        @"bottomPadding": @12,
+        @"fieldStackSpacing": @8,
+        @"textFieldHeight": @40,
+        @"sendButtonWidth": @40
     };
     
-    //下面这里，开始创建规则。
-    [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|[_titleLabel]|" options:0 metrics:nil views:views]];
-    
-    [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|[_textField]|" options:0 metrics:nil  views:views]];
+    // 调整 textField 的宽度约束
+    [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-hPadding-[_textField]-hPadding-|" options:0 metrics:metrics views:views]];
     
     // 规则3：让 _buttonStack 左右留出我们自定义的 16 点边距
     [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-hPadding-[_buttonStack]-hPadding-|" options:0 metrics:metrics views:views]];
     
     // 规则4：定义从上到下的完整布局链条
-    [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-topPadding-[_titleLabel]-labelFieldSpacing-[_textField(textFieldHeight)]-fieldStackSpacing-[_buttonStack]-bottomPadding-|"
+    [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-topPadding-[_textField(textFieldHeight)]-fieldStackSpacing-[_buttonStack]-bottomPadding-|"
                                                                  options:0
                                                                  metrics:metrics
                                                                    views:views]];
-    
-    
 }
 
 // 设置输入视图定位约束，也就是元素本身相对于父视图的位置约束
@@ -189,36 +173,25 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
 # pragma mark - 处理按钮相关
 
 -(void)setupToolbarButtons{
-    _buttonStack=[[UIStackView alloc]init];//分配空间
-    _buttonStack.axis=UILayoutConstraintAxisHorizontal;//横向排列
-    _buttonStack.distribution=UIStackViewDistributionEqualSpacing;//布局调整
+    _buttonStack=[[UIStackView alloc]init];
+    _buttonStack.axis=UILayoutConstraintAxisHorizontal;
+    _buttonStack.distribution=UIStackViewDistributionEqualSpacing;
     _buttonStack.spacing=8;
     
-    NSArray *buttonTypes =@[
-        @(InputViewButtonSend),@(InputViewButtonThink),@(InputViewButtonOnline)
+    // 初始化按钮字典
+    _actionButtons = [NSMutableDictionary dictionary];
+    
+    // 创建按钮并存储到字典中
+    NSArray *buttonTypes = @[
+        @(InputViewButtonThink),
+        @(InputViewButtonOnline),
+        @(InputViewButtonSend)
     ];
     
-    NSMutableArray *buttons = [NSMutableArray array];//存放按钮
     for (NSNumber *type in buttonTypes) {
         UIButton *button = [self createToolButtonWithType:[type integerValue]];
-        [buttons addObject:button];
-    }
-    _actionButtons = [buttons copy];
-    
-    // 将发送按钮与输入框放在同一行
-    UIButton *sendButton = _actionButtons[0];
-    [self addSubview:sendButton];
-    sendButton.translatesAutoresizingMaskIntoConstraints = NO;
-    [NSLayoutConstraint activateConstraints:@[
-        [sendButton.centerYAnchor constraintEqualToAnchor:_textField.centerYAnchor],
-        [sendButton.leadingAnchor constraintEqualToAnchor:_textField.trailingAnchor constant:8],
-        [sendButton.widthAnchor constraintEqualToConstant:60],
-        [sendButton.heightAnchor constraintEqualToConstant:40]
-    ]];
-    
-    // 其他按钮放在下一行
-    for (NSInteger i = 1; i < _actionButtons.count; i++) {
-        [_buttonStack addArrangedSubview:_actionButtons[i]];
+        _actionButtons[type] = button;
+        [_buttonStack addArrangedSubview:button];
     }
     
     _buttonStack.translatesAutoresizingMaskIntoConstraints = NO;
@@ -236,36 +209,46 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     
     NSString *imageName;//设置按钮的图标
     NSString *buttonTitle;//按钮的文字
-    
+    // 使用 UIButtonConfiguration 设置按钮样式,这个plainButtonConfiguration如果换成filled开头的，按钮就自带一个背景填充色
+    UIButtonConfiguration *config = [UIButtonConfiguration plainButtonConfiguration];
+
     switch (type){
         case InputViewButtonSend:
             imageName=@"paperplane";//设置发送按钮的样式,这是一个纸飞机
-            buttonTitle=@"发送";
+            buttonTitle=@"";
+            config.contentInsets = NSDirectionalEdgeInsetsMake(5, 5, 5, 5);
+            button.layer.cornerRadius = 17.5;  // 设置为宽度的一半，使其成为圆形
+            [button.widthAnchor constraintEqualToConstant:35].active = YES;
+            [button.heightAnchor constraintEqualToConstant:35].active = YES;
+            config.baseForegroundColor = [UIColor whiteColor];    // 发送按钮的图标和文字为白色
+            button.backgroundColor = [UIColor blackColor];        // 发送按钮的背景为黑色
             break;
         case InputViewButtonThink:
-            imageName=@"lightbulb.max";//一个发最大光的灯泡
-            buttonTitle=@"深度思考";
+            // imageName=@"lightbulb.max";//一个发最大光的灯泡，但是灯泡太大了，不匹配
+            buttonTitle=@"R1·深度思考";
+            config.contentInsets = NSDirectionalEdgeInsetsMake(5, 10, 5, 10);
+            button.layer.cornerRadius = 18;
+            config.baseForegroundColor = [UIColor colorWithHexString:@"#666666"];    // 其他按钮保持灰色
             break;
         case InputViewButtonOnline:
             imageName=@"globe";//一个地球
             buttonTitle=@"联网搜索";
+            config.contentInsets = NSDirectionalEdgeInsetsMake(5, 10, 5, 10);
+            button.layer.cornerRadius = 18;
+            config.baseForegroundColor = [UIColor colorWithHexString:@"#666666"];    // 其他按钮保持灰色
             break;
     }
-    [button setImage:[UIImage systemImageNamed:imageName] forState:UIControlStateNormal];//设置在普通状态下的样式
-    button.tintColor=[UIColor darkGrayColor];//这个是设置SF这样模版图标的样式，这里设置成深灰色
     
-    //下面设置按钮标题
-    [button setTitle:buttonTitle forState:UIControlStateNormal];
-    [button setTitleColor:[UIColor darkGrayColor] forState:UIControlStateNormal]; // 设置标题颜色
+    config.image = [UIImage systemImageNamed:imageName];
+    config.title = buttonTitle;
+    config.imagePadding = 5;
+    
+    button.configuration = config;
     
     //下面设置一下boder的样式
     button.layer.borderColor=[UIColor lightGrayColor].CGColor;
-    button.layer.borderWidth=1.0f;
-    button.backgroundColor=[UIColor systemGray6Color];//先写死这个颜色
-    button.layer.cornerRadius=15;
-    
-    // 添加内边距以改善视觉效果
-    button.contentEdgeInsets = UIEdgeInsetsMake(0, 10, 0, 10);
+    button.layer.borderWidth=0.5f;
+    // button.backgroundColor=[UIColor systemGray6Color]; //设置按钮的背景颜色
     
     [button addTarget:self action:@selector(toolButtonTapped:) forControlEvents:UIControlEventTouchUpInside];   //设置按钮的点击事件
     
@@ -279,20 +262,61 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
 
 // 深度思考和联网搜索按钮的点击事件
 - (void)toggleButton:(UIButton *)sender {
-    if ([sender.backgroundColor isEqual:[UIColor systemGray6Color]]) {
-        sender.backgroundColor = [UIColor darkGrayColor];
-        [sender setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-        if (sender == _actionButtons[1]) {//说明点击的是深度思考
-            self.isThinkButtonActive = YES;
-        } else if (sender == _actionButtons[2]) {//说明点击的是联网搜索
-            self.isOnlineButtonActive = YES;
+    // 遍历字典找到对应的按钮类型
+    InputViewButtonType buttonType = InputViewButtonSend; // 默认值
+    for (NSNumber *type in _actionButtons) {
+        if (_actionButtons[type] == sender) {
+            buttonType = [type integerValue];
+            break;
         }
-    } else {
-        sender.backgroundColor = [UIColor systemGray6Color];
-        [sender setTitleColor:[UIColor darkGrayColor] forState:UIControlStateNormal];
-        if (sender == _actionButtons[1]) {
+    }
+    
+    if (buttonType == InputViewButtonThink) {
+        if (!self.isThinkButtonActive) {
+            // 激活状态：蓝色边框和文字
+            sender.layer.borderColor = [UIColor systemBlueColor].CGColor;
+            
+            // 更新按钮配置
+            UIButtonConfiguration *config = sender.configuration;
+            config.baseForegroundColor = [UIColor systemBlueColor];
+            sender.configuration = config;
+            
+            NSLog(@"开启深度思考");
+            self.isThinkButtonActive = YES;
+        } else {
+            // 非激活状态：灰色边框和文字
+            sender.layer.borderColor = [UIColor lightGrayColor].CGColor;
+            
+            // 更新按钮配置
+            UIButtonConfiguration *config = sender.configuration;
+            config.baseForegroundColor = [UIColor blackColor];
+            sender.configuration = config;
+            
+            NSLog(@"关闭深度思考");
             self.isThinkButtonActive = NO;
-        } else if (sender == _actionButtons[2]) {
+        }
+    } else if (buttonType == InputViewButtonOnline) {
+        if (!self.isOnlineButtonActive) {
+            // 激活状态：蓝色边框和文字
+            sender.layer.borderColor = [UIColor systemBlueColor].CGColor;
+            
+            // 更新按钮配置
+            UIButtonConfiguration *config = sender.configuration;
+            config.baseForegroundColor = [UIColor systemBlueColor];
+            sender.configuration = config;
+            
+            NSLog(@"开启联网搜索");
+            self.isOnlineButtonActive = YES;
+        } else {
+            // 非激活状态：灰色边框和文字
+            sender.layer.borderColor = [UIColor lightGrayColor].CGColor;
+            
+            // 更新按钮配置
+            UIButtonConfiguration *config = sender.configuration;
+            config.baseForegroundColor = [UIColor blackColor];
+            sender.configuration = config;
+            
+            NSLog(@"关闭联网搜索");
             self.isOnlineButtonActive = NO;
         }
     }
@@ -300,10 +324,19 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
 
 // 按钮点击处理
 - (void)toolButtonTapped:(UIButton *)sender {
-    NSUInteger index = [self.actionButtons indexOfObject:sender];
-    if (index != NSNotFound) {
+    // 遍历字典找到对应的按钮类型
+    InputViewButtonType buttonType = InputViewButtonSend; // 默认值
+    for (NSNumber *type in _actionButtons) {
+        if (_actionButtons[type] == sender) {
+            buttonType = [type integerValue];
+            break;
+        }
+    }
+    
+    if (buttonType != InputViewButtonSend) {
+        NSLog(@"一个按钮被点击了");
 //        if (self.buttonAction) {
-//            self.buttonAction(index); // 通过block回调点击事件
+//            self.buttonAction(buttonType); // 通过block回调点击事件
 //        }
     }
 }
@@ -317,3 +350,4 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
 }
 
 @end
+

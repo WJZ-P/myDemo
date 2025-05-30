@@ -15,8 +15,8 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 @interface InputView :UIView
-//
-- (instancetype)initWithTitle:(NSString *)title placeholder:(NSString *)placeholder;
+
+- (instancetype)init;
 
 //通过block回调传递内容变化
 @property (nonatomic,strong) void (^textChange)(NSString *text);

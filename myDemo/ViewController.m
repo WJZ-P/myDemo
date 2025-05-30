@@ -25,7 +25,7 @@
     
     //自己的inputView
     
-    InputView *inputView=[[InputView alloc] initWithTitle:@"我是一个快乐的元宝🎉" placeholder:@"快点输入文字！🐧"];
+    InputView *inputView=[[InputView alloc] init];
     
     //下面插入自己的组件
     [self.view addSubview:inputView];
