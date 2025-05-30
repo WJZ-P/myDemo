@@ -38,7 +38,7 @@
         [topBar.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor],
         [topBar.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
         [topBar.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
-        [topBar.heightAnchor constraintEqualToConstant:44]
+        [topBar.heightAnchor constraintEqualToConstant:44 + self.view.safeAreaInsets.top]
     ]];
 }
 

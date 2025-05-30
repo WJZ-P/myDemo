@@ -214,16 +214,25 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     UIButtonConfiguration *config = [UIButtonConfiguration plainButtonConfiguration];
 
     switch (type){
-        case InputViewButtonSend:
-            imageName=@"paperplane";//设置发送按钮的样式,这是一个纸飞机
+        case InputViewButtonSend:{
+            imageName=@"paperplane.circle.fill";//设置发送按钮的样式,这是一个纸飞机
             buttonTitle=@"";
-            config.contentInsets = NSDirectionalEdgeInsetsMake(5, 5, 5, 5);
             button.layer.cornerRadius = 17.5;  // 设置为宽度的一半，使其成为圆形
             [button.widthAnchor constraintEqualToConstant:35].active = YES;
             [button.heightAnchor constraintEqualToConstant:35].active = YES;
-            config.baseForegroundColor = [UIColor whiteColor];    // 发送按钮的图标和文字为白色
-            button.backgroundColor = [UIColor blackColor];        // 发送按钮的背景为黑色
+            config.baseForegroundColor = [UIColor blackColor];    // 图案和文字是黑色
+
+            // 调整图标大小，使其完全覆盖边框
+            UIImageSymbolConfiguration *symbolConfig = [UIImageSymbolConfiguration configurationWithPointSize:28];
+
+            // 3. 应用配置并设置图像
+            config.preferredSymbolConfigurationForImage = symbolConfig;
+            config.image = [[UIImage systemImageNamed:imageName 
+                                   withConfiguration:symbolConfig] 
+                           imageWithTintColor:[UIColor blackColor]
+                           renderingMode:UIImageRenderingModeAlwaysOriginal];
             break;
+        }
         case InputViewButtonThink:
             // imageName=@"lightbulb.max";//一个发最大光的灯泡，但是灯泡太大了，不匹配
             buttonTitle=@"R1·深度思考";
@@ -241,6 +250,7 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     }
     
     config.image = [UIImage systemImageNamed:imageName];
+    
     config.title = buttonTitle;
     config.imagePadding = 5;
     
