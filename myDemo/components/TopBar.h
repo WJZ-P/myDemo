@@ -11,14 +11,14 @@ NS_ASSUME_NONNULL_BEGIN
 // 初始化方法
 - (instancetype)init;
 
-// 设置标题
-- (void)setTitle:(NSString *)title;
+// // 设置标题
+// - (void)setTitle:(NSString *)title;
 
-// 设置左侧按钮
-- (void)setLeftButtonWithImage:(NSString *)imageName action:(void (^)(void))action;
+// // 设置左侧按钮
+// - (void)setLeftButtonWithImage:(NSString *)imageName action:(void (^)(void))action;
 
-// 设置右侧按钮
-- (void)setRightButtonWithImage:(NSString *)imageName action:(void (^)(void))action;
+// // 设置右侧按钮
+// - (void)setRightButtonWithImage:(NSString *)imageName action:(void (^)(void))action;
 
 @end
 

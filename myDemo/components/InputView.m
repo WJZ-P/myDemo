@@ -75,6 +75,12 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     self.layer.borderWidth = 0.2f;  //控制整个组件的边框
     self.layer.cornerRadius = 20.0f;
     self.backgroundColor = [UIColor colorWithHexString:@"#f8f8f8"];  // 设置一个更浅的灰色背景
+
+    // 添加底部阴影
+    self.layer.shadowColor = [UIColor blackColor].CGColor;
+    self.layer.shadowOffset = CGSizeMake(0, 1);
+    self.layer.shadowOpacity = 0.1;
+    self.layer.shadowRadius = 2;
 }
 
 #pragma mark - 设置Constraints
@@ -196,11 +202,6 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     
     _buttonStack.translatesAutoresizingMaskIntoConstraints = NO;
     [self addSubview:_buttonStack];
-    [NSLayoutConstraint activateConstraints:@[
-        [_buttonStack.topAnchor constraintEqualToAnchor:_textField.bottomAnchor constant:16],
-        [_buttonStack.leadingAnchor constraintEqualToAnchor:self.leadingAnchor constant:16],
-        [_buttonStack.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-16]
-    ]];
 }
 
 // 创建单个按钮
@@ -250,12 +251,7 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     button.layer.borderWidth=0.5f;
     // button.backgroundColor=[UIColor systemGray6Color]; //设置按钮的背景颜色
     
-    [button addTarget:self action:@selector(toolButtonTapped:) forControlEvents:UIControlEventTouchUpInside];   //设置按钮的点击事件
-    
-    // 为深度思考和联网搜索按钮添加点击事件
-    if (type == InputViewButtonThink || type == InputViewButtonOnline) {
-        [button addTarget:self action:@selector(toggleButton:) forControlEvents:UIControlEventTouchUpInside];
-    }
+    [button addTarget:self action:@selector(toggleButton:) forControlEvents:UIControlEventTouchUpInside];   //设置按钮的点击事件
     
     return button;
 }
@@ -271,76 +267,48 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
         }
     }
     
-    if (buttonType == InputViewButtonThink) {
-        if (!self.isThinkButtonActive) {
-            // 激活状态：蓝色边框和文字
-            sender.layer.borderColor = [UIColor systemBlueColor].CGColor;
+    switch (buttonType) {
+        case InputViewButtonThink: {
+            BOOL isActive = !self.isThinkButtonActive;
+            // 更新按钮样式
+            sender.layer.borderColor = isActive ? [UIColor systemBlueColor].CGColor : [UIColor lightGrayColor].CGColor;
             
             // 更新按钮配置
             UIButtonConfiguration *config = sender.configuration;
-            config.baseForegroundColor = [UIColor systemBlueColor];
+            config.baseForegroundColor = isActive ? [UIColor systemBlueColor] : [UIColor blackColor];
             sender.configuration = config;
             
-            NSLog(@"开启深度思考");
-            self.isThinkButtonActive = YES;
-        } else {
-            // 非激活状态：灰色边框和文字
-            sender.layer.borderColor = [UIColor lightGrayColor].CGColor;
-            
-            // 更新按钮配置
-            UIButtonConfiguration *config = sender.configuration;
-            config.baseForegroundColor = [UIColor blackColor];
-            sender.configuration = config;
-            
-            NSLog(@"关闭深度思考");
-            self.isThinkButtonActive = NO;
-        }
-    } else if (buttonType == InputViewButtonOnline) {
-        if (!self.isOnlineButtonActive) {
-            // 激活状态：蓝色边框和文字
-            sender.layer.borderColor = [UIColor systemBlueColor].CGColor;
-            
-            // 更新按钮配置
-            UIButtonConfiguration *config = sender.configuration;
-            config.baseForegroundColor = [UIColor systemBlueColor];
-            sender.configuration = config;
-            
-            NSLog(@"开启联网搜索");
-            self.isOnlineButtonActive = YES;
-        } else {
-            // 非激活状态：灰色边框和文字
-            sender.layer.borderColor = [UIColor lightGrayColor].CGColor;
-            
-            // 更新按钮配置
-            UIButtonConfiguration *config = sender.configuration;
-            config.baseForegroundColor = [UIColor blackColor];
-            sender.configuration = config;
-            
-            NSLog(@"关闭联网搜索");
-            self.isOnlineButtonActive = NO;
-        }
-    }
-}
-
-// 按钮点击处理
-- (void)toolButtonTapped:(UIButton *)sender {
-    // 遍历字典找到对应的按钮类型
-    InputViewButtonType buttonType = InputViewButtonSend; // 默认值
-    for (NSNumber *type in _actionButtons) {
-        if (_actionButtons[type] == sender) {
-            buttonType = [type integerValue];
+            // 更新状态
+            self.isThinkButtonActive = isActive;
+            NSLog(@"%@深度思考", isActive ? @"开启" : @"关闭");
             break;
         }
-    }
-    
-    if (buttonType != InputViewButtonSend) {
-        NSLog(@"一个按钮被点击了");
-//        if (self.buttonAction) {
-//            self.buttonAction(buttonType); // 通过block回调点击事件
-//        }
+            
+        case InputViewButtonOnline: {
+            BOOL isActive = !self.isOnlineButtonActive;
+            // 更新按钮样式
+            sender.layer.borderColor = isActive ? [UIColor systemBlueColor].CGColor : [UIColor lightGrayColor].CGColor;
+            
+            // 更新按钮配置
+            UIButtonConfiguration *config = sender.configuration;
+            config.baseForegroundColor = isActive ? [UIColor systemBlueColor] : [UIColor blackColor];
+            sender.configuration = config;
+            
+            // 更新状态
+            self.isOnlineButtonActive = isActive;
+            NSLog(@"%@联网搜索", isActive ? @"开启" : @"关闭");
+            break;
+        }
+
+        case InputViewButtonSend: {
+            NSLog(@"点击了发送按钮");
+            break;
+        }
+            
+        default:
+            break;
     }
 }
-
 
 #pragma mark - 视图释放时
 

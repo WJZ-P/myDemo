@@ -1,4 +1,5 @@
 #import "TopBar.h"
+#import "../utils/ColorUtil.h"
 
 @interface TopBar()
 
@@ -15,6 +16,18 @@
     if (self) {
         [self setupUI];
         [self setupConstraints];
+        
+        // 设置默认标题
+        [self setTitle:@"聊天"];
+        
+        // 设置默认按钮事件
+        self.leftButtonAction = ^{
+            NSLog(@"点击了侧边栏");
+        };
+        
+        self.rightButtonAction = ^{
+            NSLog(@"点击了新建聊天");
+        };
     }
     return self;
 }
@@ -23,7 +36,7 @@
 
 - (void)setupUI {
     // 设置背景色
-    self.backgroundColor = [UIColor whiteColor];
+    self.backgroundColor = [UIColor colorWithHexString:@"#f8f8f8"];
     
     // 创建标题标签
     _titleLabel = [[UILabel alloc] init];
@@ -49,11 +62,7 @@
     [_rightButton addTarget:self action:@selector(rightButtonTapped) forControlEvents:UIControlEventTouchUpInside];
     [self addSubview:_rightButton];
     
-    // 添加底部阴影
-    self.layer.shadowColor = [UIColor blackColor].CGColor;
-    self.layer.shadowOffset = CGSizeMake(0, 1);
-    self.layer.shadowOpacity = 0.1;
-    self.layer.shadowRadius = 2;
+
 }
 
 - (void)setupConstraints {
