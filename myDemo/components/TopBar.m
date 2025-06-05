@@ -19,16 +19,7 @@
         [self setupConstraints];
         
         // 设置默认标题
-        [self setTitle:@"超级无敌腾讯元宝"];
-        
-        // 设置默认按钮事件
-        self.YBSideBarButtonAction = ^{
-            NSLog(@"点击了侧边栏");
-        };
-        
-        self.YBNewChatButtonAction = ^{
-            NSLog(@"点击了新建聊天");
-        };
+        [self setTitle:@"腾讯元宝·AI助手"];
     }
     return self;
 }
@@ -47,7 +38,7 @@
     // 创建标题标签
     _titleLabel = [[UILabel alloc] init];
     _titleLabel.textAlignment = NSTextAlignmentCenter;
-    _titleLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightMedium];
+    _titleLabel.font = [UIFont systemFontOfSize:20 weight:UIFontWeightMedium];
     _titleLabel.textColor = [UIColor blackColor];
     _titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
     [self addSubview:_titleLabel];
@@ -97,14 +88,14 @@
 #pragma mark - Button Actions
 
 - (void)YBSideBarButtonTapped {
-    if (self.YBSideBarButtonAction) {
-        self.YBSideBarButtonAction();
+    if ([self.delegate respondsToSelector:@selector(topBar:didTapSideBarButton:)]) {
+        [self.delegate topBar:self didTapSideBarButton:_YBSideBarButton];
     }
 }
 
 - (void)YBNewChatButtonTapped {
-    if (self.YBNewChatButtonAction) {
-        self.YBNewChatButtonAction();
+    if ([self.delegate respondsToSelector:@selector(topBar:didTapNewChatButton:)]) {
+        [self.delegate topBar:self didTapNewChatButton:_YBNewChatButton];
     }
 }
 
@@ -120,5 +111,7 @@
     // 更新底部边框线的frame
     _bottomBorder.frame = CGRectMake(0, self.frame.size.height - 1, self.frame.size.width, 1);
 }
+
+#pragma mark - Delegate
 
 @end 

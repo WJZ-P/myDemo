@@ -37,7 +37,6 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
         [self setupUI];
         [self setupToolbarButtons];
         [self setupConstraints];
-        [self setupObservers];
         
         self.textChange=^(NSString * text){
             NSLog(@"用户输入了：%@",text);
@@ -81,6 +80,9 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     self.layer.shadowOffset = CGSizeMake(0, 1);
     self.layer.shadowOpacity = 0.1;
     self.layer.shadowRadius = 2;
+
+    // 监听输入框内容变化
+    [_textField addTarget:self action:@selector(handleTextChanged) forControlEvents:UIControlEventEditingChanged];
 }
 
 #pragma mark - 设置Constraints
@@ -127,19 +129,6 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
 }
 
 #pragma mark - 设置监听器
-
--(void)setupObservers{
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(handleTextChange:)
-                                                 name:UITextFieldTextDidChangeNotification
-                                               object:_textField];
-}
-
--(void)handleTextChange:(NSNotification *)notice{
-    if(self.textChange){
-        self.textChange(_textField.text);
-    }
-}
 
 // 键盘处理（移至InputView内部）
 - (void)setupKeyboardObservers {
@@ -266,7 +255,7 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     return button;
 }
 
-// 深度思考和联网搜索按钮的点击事件
+// 按钮的点击事件
 - (void)toggleButton:(UIButton *)sender {
     // 遍历字典找到对应的按钮类型
     InputViewButtonType buttonType = InputViewButtonSend; // 默认值
@@ -279,6 +268,7 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     
     switch (buttonType) {
         case InputViewButtonThink: {
+            NSLog(@"深度思考按钮被点击");
             BOOL isActive = !self.isThinkButtonActive;
             // 更新按钮样式
             sender.layer.borderColor = isActive ? [UIColor systemBlueColor].CGColor : [UIColor lightGrayColor].CGColor;
@@ -290,11 +280,12 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
             
             // 更新状态
             self.isThinkButtonActive = isActive;
-            NSLog(@"%@深度思考", isActive ? @"开启" : @"关闭");
+            
             break;
         }
             
         case InputViewButtonOnline: {
+            NSLog(@"联网搜索按钮被点击");
             BOOL isActive = !self.isOnlineButtonActive;
             // 更新按钮样式
             sender.layer.borderColor = isActive ? [UIColor systemBlueColor].CGColor : [UIColor lightGrayColor].CGColor;
@@ -306,17 +297,44 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
             
             // 更新状态
             self.isOnlineButtonActive = isActive;
-            NSLog(@"%@联网搜索", isActive ? @"开启" : @"关闭");
+
             break;
         }
 
         case InputViewButtonSend: {
-            NSLog(@"点击了发送按钮");
+            NSLog(@"发送按钮被点击");
+            NSString *message = [self currentText];
+            if (message.length > 0) {
+                // 通知代理
+                if ([self.delegate respondsToSelector:@selector(inputView:didSendMessage:)]) {
+                    [self.delegate inputView:self didSendMessage:message];
+                }
+                // 清空输入框
+                [self clearText];
+            }
             break;
         }
             
         default:
             break;
+    }
+}
+
+#pragma mark - Public Methods
+
+- (NSString *)currentText {
+    return _textField.text;
+}
+
+- (void)clearText {
+    _textField.text = @"";
+}
+
+#pragma mark - 监听输入框内容变化
+
+- (void)handleTextChanged {
+    if (self.textChange) {
+        self.textChange(self.textField.text);
     }
 }
 
@@ -326,6 +344,7 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     // 释放的时候要移除观察者
     [[NSNotificationCenter defaultCenter] removeObserver: self];
 }
+
 
 @end
 

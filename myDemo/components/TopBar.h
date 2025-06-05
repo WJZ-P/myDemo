@@ -2,23 +2,25 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@class TopBar;
+
+@protocol TopBarDelegate <NSObject>
+
+@required
+- (void)topBar:(TopBar *)topBar didTapSideBarButton:(UIButton *)button;
+- (void)topBar:(TopBar *)topBar didTapNewChatButton:(UIButton *)button;
+
+@end
+
 @interface TopBar : UIView
 
-// 按钮点击事件回调
-@property (nonatomic, copy) void (^YBSideBarButtonAction)(void);
-@property (nonatomic, copy) void (^YBNewChatButtonAction)(void);
+@property (nonatomic, weak) id<TopBarDelegate> delegate;
 
 // 初始化方法
 - (instancetype)init;
 
 // 设置标题
 - (void)setTitle:(NSString *)title;
-
-// // 设置左侧按钮
-// - (void)setLeftButtonWithImage:(NSString *)imageName action:(void (^)(void))action;
-
-// // 设置右侧按钮
-// - (void)setRightButtonWithImage:(NSString *)imageName action:(void (^)(void))action;
 
 @end
 

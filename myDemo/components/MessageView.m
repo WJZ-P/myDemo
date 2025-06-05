@@ -4,7 +4,7 @@
 @interface MessageView () <UITableViewDelegate, UITableViewDataSource>
 
 @property (nonatomic, strong) UITableView *tableView;
-@property (nonatomic, strong) NSMutableArray *messages;
+@property (nonatomic, strong) NSMutableArray<MessageModel *> *messages;
 
 @end
 
@@ -45,8 +45,8 @@
 
 #pragma mark - Public Methods
 
-- (void)addMessage:(NSString *)message isUser:(BOOL)isUser {
-    [_messages addObject:@{@"message": message, @"isUser": @(isUser)}];
+- (void)addMessage:(MessageModel *)message {
+    [_messages addObject:message];
     
     // 在主线程更新 UI
     dispatch_async(dispatch_get_main_queue(), ^{// dispatch_async 是异步执行，不会阻塞主线程，第一个参数是队列，第二个参数是block
@@ -72,10 +72,10 @@
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     MessageCell *cell = [tableView dequeueReusableCellWithIdentifier:@"MessageCell" forIndexPath:indexPath];
     
-    NSDictionary *messageData = _messages[indexPath.row];
-    [cell configureWithMessage:messageData[@"message"] isUser:[messageData[@"isUser"] boolValue]];
+    MessageModel *message = _messages[indexPath.row];
+    [cell configureWithMessage:message];
     
     return cell;
 }
 
-@end 
+@end
