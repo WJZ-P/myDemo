@@ -8,19 +8,23 @@
 #import "InputView.h"
 #import "../utils/ColorUtil.h"
 
+// 定义最大行数常量
+const NSInteger kMaxInputLines = 3;
+
 typedef NS_ENUM(NSUInteger,InputViewButtonType){
     InputViewButtonSend,
     InputViewButtonThink,
     InputViewButtonOnline
 };
 
-@interface InputView()
+@interface InputView() <UITextViewDelegate>
 
-@property (nonatomic, strong) UITextField *textField;
+@property (nonatomic, strong) UITextView *textView;
 @property (nonatomic, strong) UIStackView *buttonStack;
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, UIButton *> *actionButtons;
 
 @property (nonatomic, strong) NSLayoutConstraint *bottomConstraint;
+@property (nonatomic, strong) NSLayoutConstraint *textViewHeightConstraint;
 @property (nonatomic, weak) UIView *containerView;
 
 @end
@@ -60,14 +64,20 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
 
 -(void)setupUI{
     //这里设置输入框的内容
-    _textField = [[UITextField alloc] init];
-    _textField.placeholder = @"和元宝说点什么";
-    _textField.borderStyle = UITextBorderStyleNone;  // 移除边框
-    _textField.font = [UIFont systemFontOfSize:16];
+    _textView = [[UITextView alloc] init];
+    _textView.delegate = self;
+    _textView.font = [UIFont systemFontOfSize:16];
+    _textView.textContainerInset = UIEdgeInsetsMake(10, 8, 10, 8); // 调整上下内边距
+    _textView.backgroundColor = [UIColor clearColor];
+    _textView.scrollEnabled = NO; // 禁用滚动，让高度自适应
     
-    _textField.translatesAutoresizingMaskIntoConstraints=NO;
+    // 设置占位符文本
+    _textView.text = @"和元宝说点什么";
+    _textView.textColor = [UIColor lightGrayColor];
     
-    [self addSubview:_textField];
+    _textView.translatesAutoresizingMaskIntoConstraints=NO;
+    
+    [self addSubview:_textView];
     
     // 添加InputView的边框
     self.layer.borderColor = [UIColor lightGrayColor].CGColor;
@@ -80,37 +90,42 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
     self.layer.shadowOffset = CGSizeMake(0, 1);
     self.layer.shadowOpacity = 0.1;
     self.layer.shadowRadius = 2;
-
-    // 监听输入框内容变化
-    [_textField addTarget:self action:@selector(handleTextChanged) forControlEvents:UIControlEventEditingChanged];
 }
 
 #pragma mark - 设置Constraints
 
 // 设置的是该视图内部布局
 - (void)setupConstraints{
-    NSDictionary *views=NSDictionaryOfVariableBindings(_textField,_buttonStack);
+    NSDictionary *views=NSDictionaryOfVariableBindings(_textView,_buttonStack);
     
     NSDictionary *metrics = @{
         @"topPadding": @8,
         @"hPadding": @16,
         @"bottomPadding": @12,
         @"fieldStackSpacing": @8,
-        @"textFieldHeight": @40,
+        @"minTextFieldHeight": @40,
         @"sendButtonWidth": @40
     };
     
-    // 调整 textField 的宽度约束
-    [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-hPadding-[_textField]-hPadding-|" options:0 metrics:metrics views:views]];
+    // 调整 textView 的宽度约束
+    [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-hPadding-[_textView]-hPadding-|" options:0 metrics:metrics views:views]];
     
     // 规则3：让 _buttonStack 左右留出我们自定义的 16 点边距
     [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-hPadding-[_buttonStack]-hPadding-|" options:0 metrics:metrics views:views]];
     
-    // 规则4：定义从上到下的完整布局链条
-    [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-topPadding-[_textField(textFieldHeight)]-fieldStackSpacing-[_buttonStack]-bottomPadding-|"
+    // 规则4：定义从上到下的完整布局链条，移除固定高度约束
+    [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-topPadding-[_textView]-fieldStackSpacing-[_buttonStack]-bottomPadding-|"
                                                                  options:0
                                                                  metrics:metrics
                                                                    views:views]];
+    
+    // 创建并存储 textView 的高度约束，设置初始高度
+    self.textViewHeightConstraint = [_textView.heightAnchor constraintEqualToConstant:40];
+    self.textViewHeightConstraint.active = YES;
+    
+    // 设置最小高度约束
+    NSLayoutConstraint *minHeightConstraint = [_textView.heightAnchor constraintGreaterThanOrEqualToConstant:40];
+    minHeightConstraint.active = YES;
 }
 
 // 设置输入视图定位约束，也就是元素本身相对于父视图的位置约束
@@ -323,18 +338,51 @@ typedef NS_ENUM(NSUInteger,InputViewButtonType){
 #pragma mark - Public Methods
 
 - (NSString *)currentText {
-    return _textField.text;
+    return _textView.text;
 }
 
 - (void)clearText {
-    _textField.text = @"";
+    _textView.text = @"";
+    // 重置高度
+    self.textViewHeightConstraint.constant = 40;
 }
 
-#pragma mark - 监听输入框内容变化
+#pragma mark - UITextViewDelegate
 
-- (void)handleTextChanged {
+- (void)textViewDidBeginEditing:(UITextView *)textView {
+    // 当开始编辑时，如果是占位符文本，则清空并改变颜色
+    if ([textView.text isEqualToString:@"和元宝说点什么"]) {
+        textView.text = @"";
+        textView.textColor = [UIColor blackColor];
+    }
+}
+
+- (void)textViewDidEndEditing:(UITextView *)textView {
+    // 当结束编辑时，如果文本为空，则显示占位符
+    if (textView.text.length == 0) {
+        textView.text = @"和元宝说点什么";
+        textView.textColor = [UIColor lightGrayColor];
+    }
+}
+
+- (void)textViewDidChange:(UITextView *)textView {
+    // 计算文本内容的高度，需要考虑内边距
+    CGFloat maxHeight = (textView.font.lineHeight * kMaxInputLines) + 
+                       textView.textContainerInset.top + 
+                       textView.textContainerInset.bottom;
+    
+    // 计算内容实际需要的高度，同样需要考虑内边距
+    CGFloat contentHeight = [textView sizeThatFits:CGSizeMake(textView.frame.size.width, CGFLOAT_MAX)].height;
+    
+    // 限制最大高度
+    contentHeight = MIN(contentHeight, maxHeight);
+    
+    // 更新高度约束
+    self.textViewHeightConstraint.constant = contentHeight;
+    
+    // 通知内容变化
     if (self.textChange) {
-        self.textChange(self.textField.text);
+        self.textChange(textView.text);
     }
 }
 

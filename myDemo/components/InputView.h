@@ -35,6 +35,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) BOOL isThinkButtonActive;
 @property (nonatomic, assign) BOOL isOnlineButtonActive;
 
+// 定义最大行数常量
+extern const NSInteger kMaxInputLines;
+
 @end
 
 NS_ASSUME_NONNULL_END
