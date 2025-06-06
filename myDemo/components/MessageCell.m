@@ -3,6 +3,7 @@
 @implementation MessageCell {
     NSLayoutConstraint *_bubbleRight;//约束布局
     NSLayoutConstraint *_bubbleLeft;
+    NSLayoutConstraint *_imageAspectRatioConstraint; // 用于控制图片宽高比的约束
 }
 
 - (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier {
@@ -15,20 +16,22 @@
         _bubbleView = [[UIView alloc] init];
         _bubbleView.layer.cornerRadius = 12;
         _bubbleView.translatesAutoresizingMaskIntoConstraints = NO;//约束布局
-        [self.contentView addSubview:_bubbleView];
+        [self.contentView addSubview:_bubbleView];//添加气泡视图
 
         // 创建消息标签
         _messageLabel = [[UILabel alloc] init];
         _messageLabel.numberOfLines = 0;//表示消息可以显示多行文本，0表示不限制行数
         _messageLabel.font = [UIFont systemFontOfSize:16];
         _messageLabel.translatesAutoresizingMaskIntoConstraints = NO;//约束布局
-        [_bubbleView addSubview:_messageLabel];
+        [_bubbleView addSubview:_messageLabel];//添加文本消息
         
         // 创建图片视图
         _messageImageView = [[UIImageView alloc] init];
-        _messageImageView.contentMode = UIViewContentModeScaleAspectFit;
+        _messageImageView.contentMode = UIViewContentModeScaleAspectFit;    //不要改变图片的宽高比例
+        _messageImageView.layer.cornerRadius = 12; // 同样设置圆角
+        _messageImageView.clipsToBounds = YES; // 必须设置，否则图片内容会溢出圆角
         _messageImageView.translatesAutoresizingMaskIntoConstraints = NO;
-        [_bubbleView addSubview:_messageImageView];
+        [_bubbleView addSubview:_messageImageView];//添加图片消息
 
         // 只保留最大宽度约束
         [_bubbleView.widthAnchor constraintLessThanOrEqualToAnchor:self.contentView.widthAnchor multiplier:0.75].active = YES;
@@ -53,19 +56,12 @@
         // 图片视图约束
         [_messageImageView.topAnchor constraintEqualToAnchor:_bubbleView.topAnchor constant:8].active = YES;
         [_messageImageView.bottomAnchor constraintEqualToAnchor:_bubbleView.bottomAnchor constant:-8].active = YES;
-        [_messageImageView.leadingAnchor constraintEqualToAnchor:_bubbleView.leadingAnchor constant:12].active = YES;
-        [_messageImageView.trailingAnchor constraintEqualToAnchor:_bubbleView.trailingAnchor constant:-12].active = YES;
-        [_messageImageView.widthAnchor constraintLessThanOrEqualToConstant:200].active = YES;//对于图片，还要约束一下最大的宽高，不然图片太大的话就占据整个屏幕了。
-        [_messageImageView.heightAnchor constraintLessThanOrEqualToConstant:200].active = YES;
+        [_messageImageView.leadingAnchor constraintEqualToAnchor:_bubbleView.leadingAnchor constant:8].active = YES;
+        [_messageImageView.trailingAnchor constraintEqualToAnchor:_bubbleView.trailingAnchor constant:-8].active = YES;
 
-        // 内容自适应
+        // 拒绝被父视图拉伸
         [_bubbleView setContentHuggingPriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];
-        [_messageLabel setContentHuggingPriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];//保持水平上的最小宽度，就是视图适应内容宽度
-        [_messageImageView setContentHuggingPriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];
 
-        [_bubbleView setContentCompressionResistancePriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];//保证气泡的宽度不会被压缩，收到长消息时，高Compression Resistance会让消息换行而不是截断。
-        [_messageLabel setContentCompressionResistancePriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];
-        [_messageImageView setContentCompressionResistancePriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];
     }
     return self;
 }
@@ -95,11 +91,38 @@
             break;
         }
         case MessageTypeImage: {
-            _messageImageView.image = (UIImage *)message.content;
+            UIImage *image = (UIImage *)message.content;
+            _messageImageView.image = image;
             _messageLabel.hidden = YES;
             _messageImageView.hidden = NO;
+            
+            // 创建并激活新的宽高比约束
+            if (image && image.size.width > 0) {
+                CGFloat aspectRatio = image.size.height / image.size.width;
+                _imageAspectRatioConstraint = [_messageImageView.heightAnchor constraintEqualToAnchor:_messageImageView.widthAnchor multiplier:aspectRatio];
+                _imageAspectRatioConstraint.active = YES;
+            }
             break;
         }
+    }
+}
+
+// 添加 prepareForReuse 是一个好习惯，防止Cell复用时显示错乱
+- (void)prepareForReuse {
+    [super prepareForReuse];
+    
+    // 重置内容
+    _messageLabel.text = nil;
+    _messageImageView.image = nil;
+    
+    // 重置视图状态
+    _messageLabel.hidden = YES;
+    _messageImageView.hidden = YES;
+    
+    // 移除动态添加的约束
+    if (_imageAspectRatioConstraint) {
+        _imageAspectRatioConstraint.active = NO;
+        _imageAspectRatioConstraint = nil;
     }
 }
 
